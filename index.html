@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced QR Attendance System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        h2 {
+            color: #555;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 1rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .qr-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 2rem 0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            min-height: 250px;
+            align-items: center;
+        }
+
+        #qrcode img {
+            max-width: 250px;
+            height: auto;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .session-info {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .session-info h3 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #6c757d;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+        }
+
+        .attendee-list {
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .attendee-item {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            background: white;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .attendee-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .attendee-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .google-btn {
+            background: #4285f4;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .admin-controls button {
+            flex: 1;
+            padding: 0.8rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-btn {
+            background: #6c757d;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+            margin-right: auto;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .admin-controls {
+                flex-direction: column;
+            }
+
+            .info-item {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Session Setup Page -->
+        <div id="sessionSetup" class="page active">
+            <h1>📅 Create Attendance Session</h1>
+            <p style="color: #666; margin-bottom: 2rem;">Set up a new attendance session</p>
+            
+            <form id="sessionForm">
+                <div class="form-group">
+                    <label for="sessionDate">📅 Attendance Date</label>
+                    <input type="date" id="sessionDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sessionHandler">👨‍🏫 Session Handled By</label>
+                    <input type="text" id="sessionHandler" required placeholder="Enter instructor name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="sessionTopic">📚 Session Topic</label>
+                    <textarea id="sessionTopic" required placeholder="Enter the topic/subject of this session"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sessionTiming">⏰ Session Timing</label>
+                    <input type="text" id="sessionTiming" required placeholder="e.g., 10:00 AM - 12:00 PM">
+                </div>
+                
+                <button type="submit">Generate QR Code</button>
+            </form>
+        </div>
+
+        <!-- Admin Panel (QR Code Display) -->
+        <div id="adminPanel" class="page">
+            <button class="back-btn" onclick="goBack()">← Back to Session Setup</button>
+            
+            <h1>🎟️ QR Attendance System</h1>
+            
+            <div class="session-info">
+                <h3>📋 Session Information</h3>
+                <div id="sessionDetails"></div>
+            </div>
+            
+            <div class="qr-container">
+                <div class="timer">Next refresh in: <span id="countdown">30</span>s</div>
+                <div id="qrcode">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Generating QR Code...
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                    Scan this QR code to mark attendance
+                </div>
+            </div>
+
+            <div class="stats">
+                <h3>📊 Attendance Statistics</h3>
+                <p><strong>Total Attendees:</strong> <span id="totalCount">0</span></p>
+                <div class="attendee-list" id="attendeeList">
+                    <div style="text-align: center; color: #999; padding: 2rem;">
+                        No attendees yet
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-controls">
+                <button onclick="exportData()">📥 Export CSV</button>
+                <button onclick="endSession()" class="btn-danger">🔚 End Session</button>
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page">
+            <div class="login-container">
+                <h2>🔐 Authentication Required</h2>
+                <p style="color: #666; margin-bottom: 2rem;">Please sign in with your institutional Google account to mark attendance</p>
+                
+                <!-- Google Sign-In Button Container -->
+                <div id="g_id_onload"
+                     data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                     data-callback="handleGoogleLogin"
+                     data-auto_prompt="false">
+                </div>
+                
+                <div id="googleSignInButton" style="margin-bottom: 1rem;">
+                    <!-- Google Sign-In button will be rendered here -->
+                </div>
+                
+                <!-- Fallback Manual Login Button -->
+                <button class="google-btn" onclick="manualLogin()" style="background: #6c757d;">
+                    <span>📧</span>
+                    Manual Login (For Testing)
+                </button>
+                
+                <div class="message error" id="loginError">
+                    Please use your institutional Google account
+                </div>
+                
+                <div class="message" id="loginInfo" style="display: block; background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb;">
+                    <strong>📋 Login Instructions:</strong><br>
+                    • Click "Sign in with Google" above<br>
+                    • Use your institutional email account<br>
+                    • Accepted domains: .edu, .ac.in, .edu.in<br>
+                    • Your email must be verified and active
+                </div>
+                
+                <!-- User Info Display (after successful login) -->
+                <div id="userInfo" style="display: none; background: #d4edda; padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <img id="userPicture" style="width: 50px; height: 50px; border-radius: 50%;" />
+                        <div>
+                            <div style="font-weight: bold;" id="userName"></div>
+                            <div style="font-size: 0.9rem; color: #666;" id="userEmail"></div>
+                            <div style="font-size: 0.8rem; color: #666;" id="userDomain"></div>
+                        </div>
+                    </div>
+                    <button onclick="proceedToAttendance()" style="margin-top: 1rem; width: 100%;">
+                        ✅ Proceed to Mark Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Form -->
+        <div id="attendanceForm" class="page">
+            <h2>✅ Mark Your Attendance</h2>
+            <div id="sessionInfoDisplay" class="session-info" style="margin-bottom: 2rem;"></div>
+            
+            <form id="attendanceFormElement">
+                <div class="form-group">
+                    <label for="rollNumber">🎓 Roll Number</label>
+                    <input type="text" id="rollNumber" required placeholder="Enter your roll number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="studentName">👤 Full Name</label>
+                    <input type="text" id="studentName" required placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="department">🏢 Department</label>
+                    <select id="department" required>
+                        <option value="">Select Department</option>
+                        <option value="Computer Science">Computer Science & Engineering</option>
+                        <option value="Information Technology">Information Technology</option>
+                        <option value="Electronics">Electronics & Communication</option>
+                        <option value="Electrical">Electrical & Electronics</option>
+                        <option value="Mechanical">Mechanical Engineering</option>
+                        <option value="Civil">Civil Engineering</option>
+                        <option value="Chemical">Chemical Engineering</option>
+                        <option value="Biotechnology">Biotechnology</option>
+                        <option value="Automobile">Automobile Engineering</option>
+                        <option value="Aeronautical">Aeronautical Engineering</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="section">📝 Section</label>
+                    <select id="section" required>
+                        <option value="">Select Section</option>
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+                        <option value="E">Section E</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="submitBtn">Submit Attendance</button>
+            </form>
+            
+            <div class="message success" id="successMessage">
+                ✅ Attendance marked successfully! You can close this page now.
+            </div>
+            
+            <div class="message error" id="errorMessage">
+                ❌ Unable to mark attendance. Please try again.
+            </div>
+        </div>
+
+        <!-- Token Validation Error -->
+        <div id="errorPage" class="page">
+            <h2>❌ Invalid or Expired</h2>
+            <p style="color: #666; margin: 2rem 0;">This QR code has expired or is invalid. Please scan a fresh QR code from the admin panel.</p>
+            <button onclick="window.close()" class="btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        // Global variables
+        let currentSession = null;
+        let currentToken = '';
+        let countdown = 30;
+        let timerInterval;
+        let attendees = [];
+        let currentUser = null;
+        let googleInitialized = false;
+        
+        // Initialize the system
+        function init() {
+            console.log('Initializing enhanced attendance system...');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const timestamp = urlParams.get('t');
+            
+            if (token && timestamp) {
+                console.log('Student attendance mode detected');
+                validateTokenAndShowLogin(token, timestamp);
+            } else {
+                console.log('Admin mode detected');
+                showPage('sessionSetup');
+                loadExistingSession();
+            }
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('sessionDate').value = today;
+        }
+
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function loadExistingSession() {
+            const saved = localStorage.getItem('currentSession');
+            if (saved) {
+                currentSession = JSON.parse(saved);
+                // If there's a saved session, go directly to admin panel
+                if (currentSession) {
+                    showPage('adminPanel');
+                    displaySessionInfo();
+                    loadAttendees();
+                    generateQR();
+                    startTimer();
+                }
+            }
+        }
+
+        function validateTokenAndShowLogin(token, timestamp) {
+            console.log('Validating token:', token, 'with timestamp:', timestamp);
+            
+            const now = Date.now();
+            const tokenTime = parseInt(timestamp);
+            const timeDiff = Math.abs(now - tokenTime);
+            
+            console.log('Current time:', now, 'Token time:', tokenTime, 'Difference:', timeDiff, 'ms');
+            
+            // Load session data first
+            const saved = localStorage.getItem('currentSession');
+            if (!saved) {
+                console.error('No current session found');
+                showPage('errorPage');
+                return;
+            }
+
+            currentSession = JSON.parse(saved);
+            console.log('Current session loaded:', currentSession);
+            
+            // Check if token is within valid time (60 seconds for better tolerance)
+            if (timeDiff > 60000) {
+                console.error('Token expired. Time difference:', timeDiff);
+                showPage('errorPage');
+                return;
+            }
+            
+            // Validate token format
+            const expectedToken = generateToken(tokenTime);
+            console.log('Expected token:', expectedToken, 'Received token:', token);
+            
+            if (token !== expectedToken) {
+                console.error('Token mismatch. Expected:', expectedToken, 'Got:', token);
+                showPage('errorPage');
+                return;
+            }
+
+            console.log('Token validation successful');
+            currentToken = token;
+            
+            showPage('loginPage');
+            initializeGoogleSignIn();
+        }
+
+        // Initialize Google Sign-In
+        function initializeGoogleSignIn() {
+            if (typeof google === 'undefined') {
+                console.log('Google Sign-In library not loaded, using fallback');
+                return;
+            }
+
+            if (googleInitialized) {
+                return;
+            }
+
+            try {
+                // Note: In production, replace with your actual Google Client ID
+                const CLIENT_ID = 'your-actual-google-client-id.apps.googleusercontent.com';
+                
+                // Update the data-client_id attribute
+                document.getElementById('g_id_onload').setAttribute('data-client_id', CLIENT_ID);
+                
+                // Render the Google Sign-In button
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSignInButton'),
+                    {
+                        theme: 'filled_blue',
+                        size: 'large',
+                        type: 'standard',
+                        text: 'signin_with',
+                        shape: 'rectangular',
+                        width: '300'
+                    }
+                );
+
+                googleInitialized = true;
+                console.log('Google Sign-In initialized');
+            } catch (error) {
+                console.error('Failed to initialize Google Sign-In:', error);
+                document.getElementById('loginError').innerHTML = `
+                    <strong>Google Sign-In Not Available</strong><br>
+                    Please use the manual login option below or contact your administrator.
+                `;
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        // Handle Google Login Callback
+        function handleGoogleLogin(response) {
+            console.log('Google login response received');
+            
+            try {
+                // Decode the JWT token
+                const userInfo = parseJwt(response.credential);
+                console.log('User info:', userInfo);
+                
+                const email = userInfo.email;
+                const domain = email.split('@')[1];
+                
+                // Validate domain
+                if (!isValidInstitutionalDomain(domain)) {
+                    showLoginError(`
+                        <strong>Invalid Email Domain</strong><br>
+                        Domain: ${domain}<br>
+                        Please use your institutional Google account ending with:<br>
+                        • .edu (for US institutions)<br>
+                        • .ac.in or .edu.in (for Indian institutions)
+                    `);
+                    return;
+                }
+                
+                // Check if email already used in this session
+                if (isEmailAlreadyUsed(email)) {
+                    showLoginError(`
+                        <strong>Email Already Used</strong><br>
+                        This Google account has already been used to mark attendance for this session.
+                    `);
+                    return;
+                }
+                
+                // Verify email is verified by Google
+                if (!userInfo.email_verified) {
+                    showLoginError(`
+                        <strong>Email Not Verified</strong><br>
+                        Please verify your Google account email before using this system.
+                    `);
+                    return;
+                }
+                
+                // Set current user with Google account info
+                currentUser = {
+                    email: email,
+                    name: userInfo.name,
+                    picture: userInfo.picture,
+                    domain: domain,
+                    loginTime: new Date().toISOString(),
+                    verified: userInfo.email_verified,
+                    provider: 'google',
+                    sub: userInfo.sub // Google user ID
+                };
+                
+                // Display user info and proceed button
+                displayUserInfo(currentUser);
+                
+                console.log('Google authentication successful:', currentUser);
+                
+            } catch (error) {
+                console.error('Error processing Google login:', error);
+                showLoginError('Failed to process Google login. Please try again.');
+            }
+        }
+
+        // Parse JWT token
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Display user information after successful login
+        function displayUserInfo(user) {
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userDomain').textContent = `Domain: ${user.domain}`;
+            document.getElementById('userPicture').src = user.picture;
+            
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginInfo').style.display = 'none';
+        }
+
+        // Proceed to attendance form
+        function proceedToAttendance() {
+            showAttendanceForm();
+        }
+
+        // Show login error
+        function showLoginError(message) {
+            document.getElementById('loginError').innerHTML = message;
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+        }
+
+        // Validate institutional domain
+        function isValidInstitutionalDomain(domain) {
+            const allowedDomains = [
+                'student.university.edu',
+                'university.edu',
+                'college.edu',
+                'student.college.edu',
+                'inst.edu',
+                'student.inst.edu'
+            ];
+            
+            return allowedDomains.includes(domain) || 
+                   domain.endsWith('.edu') || 
+                   domain.endsWith('.ac.in') ||
+                   domain.endsWith('.edu.in');
+        }
+
+        // Check if email already used
+        function isEmailAlreadyUsed(email) {
+            const sessionId = currentSession ? currentSession.id : '';
+            const existingAttendees = JSON.parse(localStorage.getItem(`attendees_${sessionId}`) || '[]');
+            
+            return existingAttendees.some(attendee => 
+                attendee.email.toLowerCase() === email.toLowerCase()
+            );
+        }
+
+        // Fallback manual login for testing
+        function manualLogin() {
+            const email = prompt('Enter your institutional email address (for testing only):');
+            
+            if (!email || !email.trim()) {
+                showLoginError('Email is required');
+                return;
+            }
+            
+            const trimmedEmail = email.trim().toLowerCase();
+            
+            // Basic email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(trimmedEmail)) {
+                showLoginError('Please enter a valid email address');
+                return;
+            }
+            
+            const domain = trimmedEmail.split('@')[1];
+            
+            if (!isValidInstitutionalDomain(domain)) {
+                showLoginError(`
+                    <strong>Invalid Email Domain</strong><br>
+                    Please use your institutional email ending with:<br>
+                    • .edu, .ac.in, or .edu.in
+                `);
+                return;
+            }
+            
+            if (isEmailAlreadyUsed(trimmedEmail)) {
+                showLoginError('This email has already been used to mark attendance for this session.');
+                return;
+            }
+            
+            // Create manual user object
+            currentUser = {
+                email: trimmedEmail,
+                name: 'Manual Login User',
+                picture: 'https://via.placeholder.com/50',
+                domain: domain,
+                loginTime: new Date().toISOString(),
+                verified: true,
+                provider: 'manual'
+            };
+            
+            displayUserInfo(currentUser);
+        }
+
+        function simulateLogin() {
+            // Redirect to new manual login
+            manualLogin();
+        }
+
+        function showAttendanceForm() {
+            showPage('attendanceForm');
+            displaySessionInfoForStudent();
+        }
+
+        function displaySessionInfoForStudent() {
+            const container = document.getElementById('sessionInfoDisplay');
+            container.innerHTML = `
+                <h3>📋 Session Details</h3>
+                <div class="info-item">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value">${currentSession.date}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Instructor:</span>
+                    <span class="info-value">${currentSession.handler}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Topic:</span>
+                    <span class="info-value">${currentSession.topic}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Time:</span>
+                    <span class="info-value">${currentSession.timing}</span>
+                </div>
+            `;
+        }
+
+        // Session form submission
+        document.getElementById('sessionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            currentSession = {
+                id: Date.now().toString(),
+                date: document.getElementById('sessionDate').value,
+                handler: document.getElementById('sessionHandler').value,
+                topic: document.getElementById('sessionTopic').value,
+                timing: document.getElementById('sessionTiming').value,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Save session
+            localStorage.setItem('currentSession', JSON.stringify(currentSession));
+            
+            // Clear previous attendees
+            attendees = [];
+            localStorage.removeItem('attendees');
+            
+            showPage('adminPanel');
+            displaySessionInfo();
+            generateQR();
+            startTimer();
+        });
+
+        function displaySessionInfo() {
+            const container = document.getElementById('sessionDetails');
+            container.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value">${currentSession.date}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Instructor:</span>
+                    <span class="info-value">${currentSession.handler}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Topic:</span>
+                    <span class="info-value">${currentSession.topic}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Timing:</span>
+                    <span class="info-value">${currentSession.timing}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Session ID:</span>
+                    <span class="info-value">${currentSession.id}</span>
+                </div>
+            `;
+        }
+
+        function generateToken(timestamp) {
+            const secret = 'attendance_secret_key_2024_enhanced';
+            const sessionId = currentSession ? currentSession.id : 'default';
+            // Use floor division by 1000 to work with seconds and add some stability
+            const timeInSeconds = Math.floor(timestamp / 1000);
+            const combined = secret + sessionId + timeInSeconds;
+            
+            let hash = 0;
+            for (let i = 0; i < combined.length; i++) {
+                const char = combined.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            const token = Math.abs(hash).toString(36).substring(0, 16);
+            
+            console.log('Generated token:', token, 'for timestamp:', timestamp, 'seconds:', timeInSeconds);
+            return token;
+        }
+        
+        function generateQR() {
+            console.log('Generating QR code...');
+            
+            if (!currentSession) {
+                console.error('No session available');
+                return;
+            }
+            
+            const timestamp = Date.now();
+            const token = generateToken(timestamp);
+            currentToken = token;
+            
+            // Create attendance URL
+            const baseUrl = window.location.href.split('?')[0];
+            const attendanceUrl = `${baseUrl}?token=${token}&t=${timestamp}`;
+            
+            console.log('Generated attendance URL:', attendanceUrl);
+            console.log('Token will be valid for 60 seconds from:', new Date(timestamp).toLocaleTimeString());
+            
+            // Clear and update QR code
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            
+            const qrImg = document.createElement('img');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(attendanceUrl)}&bgcolor=ffffff&color=333333`;
+            qrImg.alt = 'QR Code for Attendance';
+            
+            qrImg.onload = function() {
+                console.log('QR code loaded successfully at', new Date().toLocaleTimeString());
+            };
+            
+            qrImg.onerror = function() {
+                console.error('Failed to load QR code');
+                handleQRGenerationError();
+                return;
+            };
+            
+            // Add click handler for testing
+            qrImg.onclick = function() {
+                console.log('QR code clicked, opening URL:', attendanceUrl);
+                window.open(attendanceUrl, '_blank');
+            };
+            qrImg.style.cursor = 'pointer';
+            qrImg.title = 'Click to test (or scan with mobile)';
+            
+            qrContainer.appendChild(qrImg);
+            
+            // Add test link for debugging
+            const testLink = document.createElement('div');
+            testLink.innerHTML = `
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
+                    <strong>Debug Info:</strong><br>
+                    Token: ${token}<br>
+                    Timestamp: ${timestamp}<br>
+                    Valid until: ${new Date(timestamp + 60000).toLocaleTimeString()}
+                </div>
+            `;
+            qrContainer.appendChild(testLink);
+        }
+        
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            countdown = 30; // 30 seconds for QR refresh
+            
+            timerInterval = setInterval(() => {
+                countdown--;
+                const countdownElement = document.getElementById('countdown');
+                if (countdownElement) {
+                    countdownElement.textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                    countdown = 30;
+                    generateQR();
+                }
+            }, 1000);
+        }
+
+        function loadAttendees() {
+            const sessionId = currentSession ? currentSession.id : '';
+            const saved = localStorage.getItem(`attendees_${sessionId}`);
+            attendees = saved ? JSON.parse(saved) : [];
+            console.log(`Loaded ${attendees.length} attendees for session ${sessionId}:`, attendees);
+            updateStats();
+        }
+
+        function saveAttendees() {
+            const sessionId = currentSession ? currentSession.id : '';
+            localStorage.setItem(`attendees_${sessionId}`, JSON.stringify(attendees));
+            console.log(`Saved ${attendees.length} attendees to session ${sessionId}`);
+            updateStats(); // Update UI immediately after saving
+        }
+        
+        function updateStats() {
+            const totalElement = document.getElementById('totalCount');
+            if (totalElement) {
+                totalElement.textContent = attendees.length;
+            }
+            
+            const attendeeList = document.getElementById('attendeeList');
+            if (!attendeeList) return;
+            
+            if (attendees.length === 0) {
+                attendeeList.innerHTML = '<div style="text-align: center; color: #999; padding: 2rem;">No attendees yet</div>';
+            } else {
+                // Sort attendees by submission time (most recent first)
+                const sortedAttendees = [...attendees].sort((a, b) => b.submittedAt - a.submittedAt);
+                
+                attendeeList.innerHTML = sortedAttendees.map((attendee, index) => 
+                    `<div class="attendee-item">
+                        <div class="attendee-name">${index + 1}. ${escapeHtml(attendee.name)}</div>
+                        <div class="attendee-details">
+                            <strong>Roll:</strong> ${escapeHtml(attendee.rollNumber)} | 
+                            <strong>Dept:</strong> ${escapeHtml(attendee.department)} | 
+                            <strong>Section:</strong> ${escapeHtml(attendee.section)}<br>
+                            <strong>Email:</strong> ${escapeHtml(attendee.email)}<br>
+                            <small style="color: #666;">Submitted: ${attendee.timestamp}</small>
+                        </div>
+                    </div>`
+                ).join('');
+            }
+            
+            console.log(`UI updated with ${attendees.length} attendees`);
+        }
+
+        // Attendance form submission
+        document.getElementById('attendanceFormElement').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const rollNumber = document.getElementById('rollNumber').value.trim();
+            const name = document.getElementById('studentName').value.trim();
+            const department = document.getElementById('department').value;
+            const section = document.getElementById('section').value;
+            
+            if (!currentUser) {
+                showError('Please login first');
+                return;
+            }
+            
+            if (!currentSession) {
+                showError('No active session found');
+                return;
+            }
+            
+            // Load current attendees to check for duplicates
+            loadAttendees();
+            
+            // Check for duplicate attendance by roll number, email, or name+department combo
+            const isDuplicateRoll = attendees.some(a => a.rollNumber === rollNumber);
+            const isDuplicateEmail = attendees.some(a => a.email.toLowerCase() === currentUser.email.toLowerCase());
+            const isDuplicateName = attendees.some(a => 
+                a.name.toLowerCase() === name.toLowerCase() && 
+                a.department === department
+            );
+            
+            if (isDuplicateRoll) {
+                showError('This roll number has already marked attendance for this session!');
+                return;
+            }
+            
+            if (isDuplicateEmail) {
+                showError('This email has already been used to mark attendance for this session!');
+                return;
+            }
+            
+            if (isDuplicateName) {
+                showError('A student with this name from the same department has already marked attendance!');
+                return;
+            }
+            
+            // Create attendance record
+            const attendee = {
+                rollNumber: rollNumber,
+                name: name,
+                department: department,
+                section: section,
+                email: currentUser.email,
+                timestamp: new Date().toLocaleString(),
+                sessionId: currentSession.id,
+                submittedAt: Date.now(),
+                ipAddress: 'N/A', // Would be available in real server environment
+                userAgent: navigator.userAgent.substring(0, 100) // Truncated for storage
+            };
+            
+            // Add to attendees array
+            attendees.push(attendee);
+            
+            // Save to localStorage
+            saveAttendees();
+            
+            // Clear form auto-save data
+            clearFormAutoSave();
+            
+            // Show success
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('attendanceFormElement').style.display = 'none';
+            
+            // Log the activity
+            logActivity('attendance_marked', {
+                rollNumber: rollNumber,
+                department: department,
+                section: section,
+                totalAttendees: attendees.length
+            });
+            
+            console.log('Attendance recorded successfully:', attendee);
+            console.log('Total attendees now:', attendees.length);
+            
+            // Auto-refresh admin panel if open in another tab/window
+            localStorage.setItem('attendanceUpdate', Date.now().toString());
+        });
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function exportData() {
+            if (attendees.length === 0) {
+                alert('No attendance data to export!');
+                return;
+            }
+            
+            // Create comprehensive CSV
+            const headers = [
+                'Session Date', 'Session Topic', 'Instructor', 'Timing',
+                'Roll Number', 'Name', 'Department', 'Section', 'Email', 'Timestamp'
+            ];
+            
+            const csvContent = [
+                headers,
+                ...attendees.map(a => [
+                    currentSession.date,
+                    currentSession.topic,
+                    currentSession.handler,
+                    currentSession.timing,
+                    a.rollNumber,
+                    a.name,
+                    a.department,
+                    a.section,
+                    a.email,
+                    a.timestamp
+                ])
+            ].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+            
+            // Download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_${currentSession.date}_${currentSession.id}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function endSession() {
+            if (confirm('Are you sure you want to end this session? This will clear all data and return to setup.')) {
+                // Stop all intervals
+                if (timerInterval) clearInterval(timerInterval);
+                stopPeriodicRefresh();
+                
+                // Clear session data
+                localStorage.removeItem('currentSession');
+                if (currentSession) {
+                    localStorage.removeItem(`attendees_${currentSession.id}`);
+                }
+                
+                // Reset variables
+                currentSession = null;
+                attendees = [];
+                currentUser = null;
+                
+                // Return to setup
+                showPage('sessionSetup');
+                document.getElementById('sessionForm').reset();
+                
+                // Set today's date
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('sessionDate').value = today;
+            }
+        }
+
+        function goBack() {
+            if (confirm('Going back will end the current session. Are you sure?')) {
+                endSession();
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Also initialize if DOM is already loaded
+        if (document.readyState === 'loading') {
+            // Wait for DOMContentLoaded
+        } else {
+            // DOM already loaded
+            init();
+        }
+
+        // Handle page visibility change to pause/resume timer
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (timerInterval) clearInterval(timerInterval);
+            } else {
+                if (document.getElementById('adminPanel').classList.contains('active')) {
+                    startTimer();
+                }
+            }
+        });
+
+        // Prevent form resubmission on page refresh
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+
+        // Auto-save form data as user types (for better UX)
+        function setupFormAutoSave() {
+            const formElements = ['rollNumber', 'studentName'];
+            formElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        localStorage.setItem(`form_${id}`, this.value);
+                    });
+                    
+                    // Restore saved values
+                    const saved = localStorage.getItem(`form_${id}`);
+                    if (saved) {
+                        element.value = saved;
+                    }
+                }
+            });
+        }
+
+        // Clear form auto-save data after successful submission
+        function clearFormAutoSave() {
+            const formElements = ['rollNumber', 'studentName'];
+            formElements.forEach(id => {
+                localStorage.removeItem(`form_${id}`);
+            });
+        }
+
+        // Setup auto-save when attendance form is shown
+        function enhancedShowAttendanceForm() {
+            showPage('attendanceForm');
+            displaySessionInfoForStudent();
+            setupFormAutoSave();
+        }
+
+        // Enhanced error handling with retry mechanism
+        function handleQRGenerationError() {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = `
+                <div style="color: #dc3545; padding: 2rem; text-align: center;">
+                    <div style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Failed to generate QR code</div>
+                    <button onclick="generateQR()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        // Enhanced QR generation with error handling
+        function generateQRWithErrorHandling() {
+            try {
+                generateQR();
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                handleQRGenerationError();
+            }
+        }
+
+        // Session validation and security
+        function validateSession() {
+            if (!currentSession) {
+                showError('Session expired. Please refresh the page.');
+                return false;
+            }
+            
+            // Check if session is too old (e.g., more than 12 hours)
+            const sessionAge = Date.now() - new Date(currentSession.createdAt).getTime();
+            const maxAge = 12 * 60 * 60 * 1000; // 12 hours
+            
+            if (sessionAge > maxAge) {
+                showError('Session has expired. Please create a new session.');
+                endSession();
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Network status detection
+        function checkNetworkStatus() {
+            if (!navigator.onLine) {
+                const qrContainer = document.getElementById('qrcode');
+                if (qrContainer) {
+                    qrContainer.innerHTML = `
+                        <div style="color: #dc3545; padding: 2rem; text-align: center;">
+                            <div style="font-size: 1.2rem; margin-bottom: 1rem;">📡 No Internet Connection</div>
+                            <div style="font-size: 0.9rem;">QR codes require internet connection</div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Listen for attendance updates from other tabs/windows
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'attendanceUpdate' && currentSession) {
+                console.log('Attendance update detected from another window');
+                loadAttendees(); // This will also call updateStats()
+            }
+            
+            if (e.key === `attendees_${currentSession?.id}`) {
+                console.log('Direct attendee data change detected');
+                loadAttendees();
+            }
+        });
+
+        // Periodically refresh attendee list when admin panel is active
+        let refreshInterval;
+        
+        function startPeriodicRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            
+            refreshInterval = setInterval(function() {
+                if (document.getElementById('adminPanel').classList.contains('active') && currentSession) {
+                    loadAttendees();
+                }
+            }, 5000); // Refresh every 5 seconds
+        }
+        
+        function stopPeriodicRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        window.addEventListener('offline', checkNetworkStatus);
+
+        // Enhanced session management with periodic validation
+        setInterval(function() {
+            if (currentSession && document.getElementById('adminPanel').classList.contains('active')) {
+                validateSession();
+            }
+        }, 60000); // Check every minute
+
+        // Keyboard shortcuts for admin panel
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('adminPanel').classList.contains('active')) {
+                // Ctrl/Cmd + E for export
+                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                    e.preventDefault();
+                    exportData();
+                }
+                
+                // Ctrl/Cmd + R for refresh QR (override default refresh)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                    e.preventDefault();
+                    generateQR();
+                    countdown = 30;
+                }
+            }
+        });
+
+        // Improved mobile responsiveness
+        function adjustForMobile() {
+            if (window.innerWidth <= 600) {
+                // Adjust QR code size for mobile
+                const style = document.createElement('style');
+                style.textContent = `
+                    #qrcode img {
+                        max-width: 200px !important;
+                    }
+                    .container {
+                        margin: 0.5rem;
+                        padding: 1rem;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        window.addEventListener('resize', adjustForMobile);
+        window.addEventListener('load', adjustForMobile);
+
+        // Analytics and logging (for debugging)
+        function logActivity(action, data = {}) {
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                action: action,
+                sessionId: currentSession ? currentSession.id : null,
+                userEmail: currentUser ? currentUser.email : null,
+                ...data
+            };
+            
+            console.log('Activity Log:', logEntry);
+            
+            // Store in localStorage for debugging (limit to last 100 entries)
+            let logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+            logs.push(logEntry);
+            if (logs.length > 100) {
+                logs = logs.slice(-100);
+            }
+            localStorage.setItem('activityLogs', JSON.stringify(logs));
+        }
+
+        // Log key activities
+        function enhancedInit() {
+            init();
+            logActivity('system_initialized');
+        }
+
+        // Replace the original DOMContentLoaded listener
+        document.removeEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', enhancedInit);
+    </script>
+</body>
+</html>
