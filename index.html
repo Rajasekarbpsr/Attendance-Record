@@ -928,9 +928,9 @@
         function generateToken(timestamp) {
             const secret = 'attendance_secret_key_2024_enhanced';
             const sessionId = currentSession ? currentSession.id : 'default';
-            // Use floor division by 1000 to work with seconds and add some stability
-            const timeInSeconds = Math.floor(timestamp / 1000);
-            const combined = secret + sessionId + timeInSeconds;
+            // Work with 30-second windows for more stable tokens
+            const timeWindow = Math.floor(timestamp / 30000);
+            const combined = secret + sessionId + timeWindow;
             
             let hash = 0;
             for (let i = 0; i < combined.length; i++) {
@@ -940,7 +940,7 @@
             }
             const token = Math.abs(hash).toString(36).substring(0, 16);
             
-            console.log('Generated token:', token, 'for timestamp:', timestamp, 'seconds:', timeInSeconds);
+            console.log('Generated token:', token, 'for timestamp:', timestamp, 'window:', timeWindow);
             return token;
         }
         
